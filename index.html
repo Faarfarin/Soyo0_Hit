@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibration Detection</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            text-align: center;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .info {
+            font-size: 18px;
+            margin-top: 20px;
+            color: red; 
+        }
+        .image-container {
+            position: relative;
+            width: 80%;
+            max-width: 500px;
+            margin-top: 20px;
+        }
+        img {
+            width: 100%;
+            height: auto;
+            display: none;
+        }
+        .sensitivity {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>一击破防</h1>
+    <p class="info" id="infoText">帮Soyo0拍案而起吧</p>
+    <audio id="audio" src="your-audio-file.mp3"></audio>
+    <div class="image-container">
+        <img id="defaultImage" src="Default.png" alt="Default Image" style="display: block;">
+        <img id="shakeImage" src="Cry.png" alt="Cry Image">
+    </div>
+    
+    <div class="sensitivity">
+        <label for="sensitivityRange">Soyo0有多敏感:</label>
+        <input type="range" id="sensitivityRange" min="5" max="30" value="15">
+        <span id="sensitivityValue">15</span>
+    </div>
+
+    <script>
+        let shakeTimeout;
+        let sensitivity = 15;
+
+        // 监听灵敏度滑块的输入事件 Update sensitivity value when the range input changes
+        document.getElementById('sensitivityRange').addEventListener('input', function(event) {
+            sensitivity = event.target.value;
+            document.getElementById('sensitivityValue').textContent = sensitivity;
+        });
+
+        // 处理设备运动事件 Handle device motion event
+        function handleMotion(event) {
+            const acceleration = event.accelerationIncludingGravity;
+            const totalAcceleration = Math.sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y + acceleration.z * acceleration.z);
+
+            // 如果总加速度超过灵敏度阈值，触发事件 If total acceleration exceeds the sensitivity threshold, trigger the event
+            if (totalAcceleration > sensitivity) {
+                const audio = document.getElementById('audio');
+                if (audio.paused) {
+                    audio.play();
+                }
+                document.getElementById('defaultImage').style.display = 'none';
+                document.getElementById('shakeImage').style.display = 'block';
+                
+                // 5秒后恢复喝茶 Reset to default image after 5 seconds
+                clearTimeout(shakeTimeout);
+                shakeTimeout = setTimeout(() => {
+                    document.getElementById('shakeImage').style.display = 'none';
+                    document.getElementById('defaultImage').style.display = 'block';
+                }, 5000);
+            }
+        }
+
+        // 初始化设备运动事件监听器 Initialize device motion event listener
+        function initMotion() {
+            if ('DeviceMotionEvent' in window) {
+                window.addEventListener('devicemotion', handleMotion);
+                document.getElementById('infoText').style.display = 'none'; // 隐藏提示信息 Hide the info text
+            } else {
+                document.getElementById('infoText').textContent = '你的设备不支持震动检测。'; // Your device does not support motion detection
+            }
+        }
+
+        // 请求权限 Request permission (for browsers that require permission)
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        initMotion();
+                    } else {
+                        document.getElementById('infoText').textContent = '没有权限访问设备运动传感器。'; // No permission to access device motion sensors
+                    }
+                })
+                .catch(console.error);
+        } else {
+            // 直接初始化运动检测 Directly initialize motion detection (for browsers that do not require permission)
+            initMotion();
+        }
+    </script>
+</body>
+</html>
